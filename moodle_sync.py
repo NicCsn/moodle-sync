@@ -371,10 +371,18 @@ def _secret_file() -> Path:
 def keychain_get(account: str) -> str | None:
     if IS_MAC:
         r = subprocess.run(
-            ["security", "find-generic-password", "-s", KEYCHAIN_SERVICE, "-a", account, "-w"],
+            ["security", "find-generic-password", "-s", KEYCHAIN_SERVICE, "-a", account, "-g"],
             capture_output=True, text=True,
         )
-        return r.stdout.strip() if r.returncode == 0 else None
+        if r.returncode != 0:
+            return None
+        # -g schreibt `password: "wert"` – oder bei Umlauten `password: 0x<hex>  "…"` (dann hex dekodieren)
+        for line in r.stderr.splitlines():
+            if line.startswith("password: 0x"):
+                return bytes.fromhex(line[12:].split()[0]).decode("utf-8")
+            if line.startswith('password: "'):
+                return line[11:-1]
+        return None
     if IS_WIN:
         pcred = ctypes.POINTER(_CRED)()
         if not _advapi.CredReadW(f"{KEYCHAIN_SERVICE}:{account}", _CRED_TYPE_GENERIC, 0, ctypes.byref(pcred)):
