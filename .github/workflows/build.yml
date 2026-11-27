@@ -78,7 +78,7 @@ jobs:
         run: |
           $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
           if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress; }
-          $env:MS_VERSION = python -c "import re;print(re.search(r'__version__ = \"([^\"]+)\"', open('moodle_sync.py', encoding='utf-8').read()).group(1))"
+          $env:MS_VERSION = python -c "import moodle_sync; print(moodle_sync.__version__)"
           & $iscc packaging\windows\installer.iss
           if ($LASTEXITCODE -ne 0) { exit 1 }
       - name: Installer still installieren und wieder entfernen
