@@ -1,0 +1,649 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Moodle-Sync</title>
+<style>
+:root{
+  --bg:#fff; --page:#fff; --drawer:#f8f9fa; --ink:#1d2125; --muted:#6a737b; --line:#dee2e6; --line2:#e9ecef;
+  --primary:#0f6cbf; --primary-dark:#0c589c; --primary-ink:#fff; --link:#0f6cbf;
+  --secondary:#ced4da; --secondary-ink:#1d2125; --secondary-hover:#b8c1ca;
+  --success:#357a32; --warning:#a15c00; --danger:#ca3120; --danger-bg:#f4d6d2; --info-bg:#e7f0f9; --success-bg:#d7e6d6;
+  --hover:#f5f6f7; --nav:#fff; --nav-ink:#1d2125;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#212529; --page:#1b1e21; --drawer:#212529; --ink:#e3e6e8; --muted:#9aa3ab; --line:#373c41; --line2:#2d3237;
+  --primary:#4b9be0; --primary-dark:#6aaee8; --primary-ink:#0d1a26; --link:#6aaee8;
+  --secondary:#3a4046; --secondary-ink:#e3e6e8; --secondary-hover:#474e55;
+  --success:#8fcf8b; --warning:#f0c26e; --danger:#f2988c; --danger-bg:#41211d; --info-bg:#1c2c3b; --success-bg:#233823;
+  --hover:#2a2f34; --nav:#212529; --nav-ink:#e3e6e8;
+}}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--page);color:var(--ink);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif}
+.lnk{color:var(--link);background:none;border:none;padding:0;font:inherit;text-align:left;cursor:pointer}
+.lnk:hover{text-decoration:underline}
+
+/* Kopfleiste */
+.navbar{position:sticky;top:0;z-index:5;height:60px;background:var(--nav);color:var(--nav-ink);border-bottom:1px solid var(--line);
+  display:flex;align-items:center;gap:8px;padding:0 20px;box-shadow:0 2px 4px rgba(0,0,0,.08)}
+.brand{font-weight:700;font-size:18px;margin-right:18px}
+.navbar nav{display:flex;height:100%}
+.navbar nav button{height:100%;border:none;border-bottom:3px solid transparent;background:none;color:inherit;font:inherit;padding:0 10px;cursor:pointer}
+.navbar nav button.on{border-bottom-color:var(--primary)}
+.navbar nav button:hover{background:var(--hover)}
+
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 315px;min-height:calc(100vh - 60px)}
+@media (max-width:980px){.layout{grid-template-columns:1fr}.blocks{border-left:none;border-top:1px solid var(--line)}}
+main{padding:28px 40px 80px;min-width:0}
+@media (max-width:640px){main{padding:18px 16px 60px}}
+h1{font-size:30px;font-weight:700;margin:0 0 18px;line-height:1.2}
+
+/* Block (Karte wie Moodle-Block) */
+.block{background:var(--bg);border:1px solid var(--line);border-radius:.5rem;padding:18px 18px 20px;margin-bottom:18px}
+.block>h2{font-size:19px;font-weight:700;margin:0 0 14px}
+.blocks{background:var(--drawer);border-left:1px solid var(--line);padding:20px 14px}
+.blocks .block{padding:16px}
+.blocks .block>h2{font-size:18px;margin-bottom:12px}
+
+/* Bedienelemente */
+.btn{display:inline-flex;align-items:center;gap:6px;font:inherit;font-size:14.5px;line-height:1.4;border:1px solid transparent;border-radius:.5rem;padding:6px 12px;cursor:pointer;white-space:nowrap}
+.btn-primary{background:var(--primary);color:var(--primary-ink)}
+.btn-primary:hover:not(:disabled){background:var(--primary-dark)}
+.btn-secondary{background:var(--secondary);color:var(--secondary-ink)}
+.btn-secondary:hover:not(:disabled){background:var(--secondary-hover)}
+.btn-danger{background:none;border-color:var(--danger);color:var(--danger)}
+.btn-sm{font-size:13px;padding:3px 8px}
+.btn:disabled{opacity:.55;cursor:default}
+.btn:focus-visible,input:focus-visible,select:focus-visible,.lnk:focus-visible,summary:focus-visible{outline:3px solid color-mix(in srgb,var(--primary) 45%,transparent);outline-offset:1px}
+input[type=text],input[type=password],input[type=url],input[type=time],input[type=number],select{font:inherit;font-size:14.5px;
+  border:1px solid var(--secondary);background:var(--bg);color:var(--ink);border-radius:.5rem;padding:6px 10px;min-width:0}
+select{padding-right:28px}
+input[type=checkbox]{width:16px;height:16px;accent-color:var(--primary);margin:0}
+.filters{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.filters input{width:220px}
+
+/* Kacheln */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+.ccard{border:1px solid var(--line);border-radius:.5rem;overflow:hidden;background:var(--bg);display:flex;flex-direction:column}
+.ccard .img{height:110px;display:block}
+.ccard .img svg{display:block;width:100%;height:100%}
+.ccard .body{padding:12px 14px 4px;flex:1}
+.ccard .title{color:var(--link);font-size:15px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.ccard .cat{font-size:14px;margin-top:2px}
+.src{display:flex;align-items:flex-start;gap:4px;padding:8px 6px 8px 14px;border-top:1px solid var(--line2);font-size:13.5px}
+.src .sx{flex:1;min-width:0}
+.src .sn{font-weight:600;font-size:14px;color:var(--ink)}
+.src .sp{font-size:13px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%;display:block}
+.src .sp:hover{color:var(--link)}
+.src .si{color:var(--muted)}
+.ccard .body{padding-bottom:10px}
+.list .row-c{display:grid;grid-template-columns:56px 1fr;gap:14px;align-items:start;padding:12px 4px;border-bottom:1px solid var(--line2)}
+.list .src{padding-left:0}
+.list .row-c:last-child{border-bottom:none}
+.list .thumb{width:56px;height:56px;border-radius:.4rem;overflow:hidden}
+.list .thumb svg{width:100%;height:100%;display:block}
+
+.muted{color:var(--muted)}
+.warn{color:var(--warning)} .bad{color:var(--danger)} .good{color:var(--success)}
+
+/* Drei-Punkte-Menü */
+details.menu{position:relative}
+details.menu summary{list-style:none;cursor:pointer;width:32px;height:32px;border-radius:.4rem;display:flex;align-items:center;justify-content:center;color:var(--ink)}
+details.menu summary::-webkit-details-marker{display:none}
+details.menu summary:hover{background:var(--line2)}
+details.menu .dd{position:absolute;right:0;bottom:100%;z-index:4;background:var(--bg);border:1px solid var(--line);border-radius:.5rem;
+  box-shadow:0 .5rem 1rem rgba(0,0,0,.15);min-width:210px;padding:6px 0;margin-bottom:2px}
+.list details.menu .dd{bottom:auto;top:100%}
+details.menu .dd button{display:block;width:100%;text-align:left;border:none;background:none;font:inherit;font-size:14px;color:var(--ink);padding:6px 16px;cursor:pointer}
+details.menu .dd button:hover{background:var(--hover)}
+details.menu .dd button.del{color:var(--danger)}
+
+/* Blöcke rechts */
+.site{padding:10px 0;border-top:1px solid var(--line2)}
+.site:first-of-type{border-top:none;padding-top:0}
+.site .n{font-weight:600}
+.site .s{font-size:13.5px}
+.site .links{display:flex;flex-wrap:wrap;gap:4px 12px;font-size:14px;margin-top:4px}
+.kv{font-size:14px;margin:0 0 10px}
+pre{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;line-height:1.45;background:var(--page);border:1px solid var(--line);border-radius:.5rem;
+  padding:8px 10px;max-height:260px;overflow:auto;white-space:pre-wrap;margin:10px 0 0}
+.alert{border-radius:.5rem;padding:10px 14px;font-size:14px;margin:8px 0}
+.alert-danger{background:var(--danger-bg);border:1px solid color-mix(in srgb,var(--danger) 35%,transparent)}
+.alert-info{background:var(--info-bg)}
+.alert-success{background:var(--success-bg)}
+.alert ol{margin:6px 0 0 18px;padding:0}
+.empty{text-align:center;color:var(--muted);padding:30px 10px}
+
+/* Formular (Zeitplan) */
+.frow{display:grid;grid-template-columns:230px 1fr;gap:6px 20px;padding:14px 0;border-bottom:1px solid var(--line2)}
+.frow:last-of-type{border-bottom:none}
+.frow>label,.frow>.lab{font-weight:600;font-size:14.5px;padding-top:6px}
+@media (max-width:640px){.frow{grid-template-columns:1fr}}
+.help{color:var(--muted);font-size:13px;margin:4px 0 0}
+.times{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.tchip{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--secondary);border-radius:.5rem;padding:3px 4px 3px 10px;font-variant-numeric:tabular-nums}
+.tchip button{border:none;background:none;color:var(--muted);cursor:pointer;font-size:16px;line-height:1;padding:0 4px}
+.check{display:inline-flex;gap:8px;align-items:center;cursor:pointer}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.grow{flex:1}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12.5px;background:var(--line2);padding:1px 5px;border-radius:4px}
+.path{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:13px}
+
+/* Modale */
+dialog{border:none;border-radius:.6rem;background:var(--bg);color:var(--ink);padding:0;width:min(760px,calc(100vw - 24px));max-height:calc(100vh - 40px);box-shadow:0 .5rem 2rem rgba(0,0,0,.3)}
+dialog::backdrop{background:rgba(0,0,0,.5)}
+.mh{display:flex;align-items:center;justify-content:space-between;padding:14px 20px;border-bottom:1px solid var(--line)}
+.mh h3{margin:0;font-size:20px;font-weight:700}
+.mh .x{border:none;background:none;font-size:24px;line-height:1;color:var(--muted);cursor:pointer;padding:0 4px}
+.mb{padding:16px 20px;overflow:auto;max-height:calc(100vh - 190px)}
+.mf{display:flex;gap:8px;justify-content:flex-end;flex-wrap:wrap;padding:12px 20px;border-top:1px solid var(--line)}
+.mf .left{margin-right:auto}
+label.f{display:block;font-weight:600;font-size:14px;margin:14px 0 5px}
+label.f:first-child{margin-top:0}
+.pick{display:grid;grid-template-columns:22px 1fr;gap:6px 10px;padding:12px 0;border-bottom:1px solid var(--line2)}
+.pick:last-child{border-bottom:none}
+.pick .pr{grid-column:2;display:flex;gap:6px}
+.pick .pr input{flex:1}
+.pick.off .pr{display:none}
+</style>
+</head>
+<body>
+<header class="navbar">
+  <span class="brand">Moodle-Sync</span>
+  <nav>
+    <button class="on" data-tab="dashboard">Dashboard</button>
+    <button data-tab="zeitplan">Zeitplan</button>
+    <button data-tab="protokoll">Protokoll</button>
+  </nav>
+</header>
+
+<div class="layout">
+  <main>
+    <section data-page="dashboard">
+      <h1>Dashboard</h1>
+      <div class="block">
+        <h2>Kursübersicht</h2>
+        <div class="filters">
+          <select id="f-site" aria-label="Moodle-Seite"><option value="">Alle</option></select>
+          <input type="text" id="f-q" placeholder="Suchen" aria-label="Kurse suchen">
+          <select id="f-sort" aria-label="Sortierung"><option value="name">Sortiert nach Kursname</option><option value="time">Sortiert nach letzter Synchronisation</option></select>
+          <select id="f-view" aria-label="Ansicht"><option value="tile">Kachel</option><option value="list">Liste</option></select>
+        </div>
+        <div id="courses"></div>
+      </div>
+    </section>
+
+    <section data-page="zeitplan" hidden>
+      <h1>Zeitplan</h1>
+      <div class="block">
+        <div class="frow">
+          <div class="lab">Automatisch synchronisieren</div>
+          <div><label class="check"><input type="checkbox" id="job-on"> <span id="job-text"></span></label>
+            <p class="help">Verpasst der Mac einen Termin (Ruhezustand, kein WLAN), wird nachgeholt, sobald er wach und online ist.</p></div>
+        </div>
+        <div class="frow"><div class="lab">Uhrzeiten</div><div class="times" id="times"></div></div>
+        <div class="frow">
+          <label for="target">Standardordner</label>
+          <div><div class="row"><input type="text" class="path grow" id="target"><button class="btn btn-secondary" id="btn-target">Durchsuchen …</button></div>
+            <p class="help">Wird beim Hinzufügen neuer Kurse vorgeschlagen.</p></div>
+        </div>
+        <div class="frow">
+          <label for="skip">Diese Dateitypen nie laden</label>
+          <div><input type="text" id="skip" style="width:100%"><p class="help">Endungen mit Komma getrennt</p></div>
+        </div>
+        <div class="row" style="padding-top:14px"><button class="btn btn-primary" id="btn-save-settings">Änderungen speichern</button><span id="settings-ok" class="help" style="margin:0"></span></div>
+      </div>
+    </section>
+
+    <section data-page="protokoll" hidden>
+      <h1>Protokoll</h1>
+      <div class="block"><div class="row" style="justify-content:flex-end;margin-bottom:10px"><button class="btn btn-secondary" id="btn-log">Aktualisieren</button></div>
+        <pre id="log" style="max-height:70vh;margin:0"></pre></div>
+    </section>
+  </main>
+
+  <aside class="blocks">
+    <div class="block">
+      <h2>Synchronisation</h2>
+      <p class="kv" id="sync-next"></p>
+      <button class="btn btn-primary" id="btn-all">Alle synchronisieren</button>
+      <div id="sync-run" hidden><p class="kv" style="margin:12px 0 0" id="sync-title"></p><pre id="sync-out"></pre></div>
+    </div>
+    <div class="block">
+      <h2>Moodle-Seiten</h2>
+      <div id="sites"></div>
+      <div style="border-top:1px solid var(--line2);padding-top:10px;margin-top:4px"><button class="lnk" id="btn-add-uni">Moodle hinzufügen</button></div>
+    </div>
+  </aside>
+</div>
+
+<!-- Anmelden -->
+<dialog id="dlg-login">
+  <div class="mh"><h3 id="login-title">Anmelden</h3><button class="x" data-close aria-label="Schließen">×</button></div>
+  <div class="mb">
+    <div id="login-token" hidden>
+      <label class="f" for="lg-user">Anmeldename</label><input type="text" id="lg-user" autocomplete="username" style="width:100%">
+      <label class="f" for="lg-pass">Kennwort</label><input type="password" id="lg-pass" autocomplete="current-password" style="width:100%">
+      <p class="help">Das Kennwort wird nicht gespeichert, nur der Zugangsschlüssel von Moodle (im macOS-Schlüsselbund).</p>
+    </div>
+    <div id="login-cookie" hidden>
+      <p style="margin-top:0">Diese Moodle-Seite lässt keine App-Anmeldung zu. Deshalb wird die Sitzung aus deinem Browser übernommen. Wenn sie abläuft, hier erneuern.</p>
+      <div class="alert alert-info"><ol>
+        <li><button class="lnk" id="lg-open">Moodle im Browser öffnen</button> und anmelden.</li>
+        <li id="lg-devtools"></li>
+        <li>Den Wert des Eintrags MoodleSession… kopieren.</li>
+      </ol></div>
+      <label class="f" for="lg-cookie">Wert von MoodleSession</label>
+      <input type="password" id="lg-cookie" style="width:100%" autocomplete="off">
+    </div>
+    <div id="login-err"></div>
+  </div>
+  <div class="mf"><button class="btn btn-secondary" data-close>Abbrechen</button><button id="lg-ok" class="btn btn-primary">Anmelden</button></div>
+</dialog>
+
+<!-- Kurse hinzufügen -->
+<dialog id="dlg-courses">
+  <div class="mh"><h3 id="courses-title">Kurse hinzufügen</h3><button class="x" data-close aria-label="Schließen">×</button></div>
+  <div class="mb">
+    <label class="check"><input type="checkbox" id="cs-sub"> Unterordner <code>Moodle</code> anhängen</label>
+    <p class="help" style="margin:2px 0 8px">Sinnvoll, wenn im Kursordner auch eigene Notizen liegen.</p>
+    <div id="courses-body"></div>
+    <div id="courses-err"></div>
+  </div>
+  <div class="mf"><span class="help left" id="courses-count" style="margin:0;align-self:center"></span><button class="btn btn-secondary" data-close>Abbrechen</button><button id="cs-ok" class="btn btn-primary">Hinzufügen</button></div>
+</dialog>
+
+<!-- Ordner ändern -->
+<dialog id="dlg-folder">
+  <div class="mh"><h3 id="folder-title">Ordner festlegen</h3><button class="x" data-close aria-label="Schließen">×</button></div>
+  <div class="mb">
+    <label class="f" for="fd-path">Zielordner</label>
+    <div class="row"><input type="text" class="path grow" id="fd-path"><button class="btn btn-secondary" id="fd-pick">Durchsuchen …</button></div>
+    <p class="help">Bereits geladene Dateien bleiben im alten Ordner.</p>
+    <div id="folder-err"></div>
+  </div>
+  <div class="mf"><button class="btn btn-secondary" data-close>Abbrechen</button><button id="fd-ok" class="btn btn-primary">Speichern</button></div>
+</dialog>
+
+<!-- Einstellungen einer Moodle-Seite -->
+<dialog id="dlg-site">
+  <div class="mh"><h3 id="site-title">Einstellungen</h3><button class="x" data-close aria-label="Schließen">×</button></div>
+  <div class="mb">
+    <label class="f" for="st-title">Name</label><input type="text" id="st-title" style="width:100%">
+    <label class="f">Automatisch</label>
+    <label class="check"><input type="checkbox" id="st-auto"> Zu den Uhrzeiten im Zeitplan synchronisieren</label>
+    <p class="help" id="st-auto-hint"></p>
+    <label class="f" for="st-sciebo">Sciebo-Dateien über … MB überspringen</label>
+    <input type="number" id="st-sciebo" min="0" step="50" style="width:120px">
+    <label class="f" for="st-notes">Server für Übungsblätter (CodiMD/HedgeDoc)</label>
+    <input type="text" id="st-notes" placeholder="codi.example.de" style="width:100%">
+    <p class="help">Mehrere mit Komma trennen. Verlinkte Notizen werden als .md gespeichert.</p>
+    <div id="site-err"></div>
+  </div>
+  <div class="mf"><button class="btn btn-danger left" id="st-remove">Entfernen</button><button class="btn btn-secondary" data-close>Abbrechen</button><button id="st-ok" class="btn btn-primary">Speichern</button></div>
+</dialog>
+
+<!-- Moodle hinzufügen -->
+<dialog id="dlg-add">
+  <div class="mh"><h3>Moodle hinzufügen</h3><button class="x" data-close aria-label="Schließen">×</button></div>
+  <div class="mb">
+    <div id="add-1"><label class="f" for="add-url">Adresse</label><input type="url" id="add-url" placeholder="https://moodle.uni-beispiel.de" style="width:100%"></div>
+    <div id="add-2" hidden></div>
+    <div id="add-err"></div>
+  </div>
+  <div class="mf"><button class="btn btn-secondary" data-close>Abbrechen</button><button id="add-next" class="btn btn-primary">Weiter</button></div>
+</dialog>
+
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const DOTS = `<svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><circle cx="8" cy="3" r="1.5" fill="currentColor"/><circle cx="8" cy="8" r="1.5" fill="currentColor"/><circle cx="8" cy="13" r="1.5" fill="currentColor"/></svg>`;
+let S = null, timer = null, cur = {};
+const pref = (() => { try { return JSON.parse(localStorage.getItem("ms-view") || "{}"); } catch { return {}; } })();
+
+async function api(path, body) {
+  const opt = body === undefined ? {} : {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(body)};
+  const r = await fetch(path, opt);
+  const j = await r.json().catch(() => ({error:"Antwort nicht lesbar (" + r.status + ")"}));
+  if (!r.ok) { const e = new Error(j.error || r.status); e.expired = j.expired; throw e; }
+  return j;
+}
+function when(ts) {
+  if (!ts) return "noch nie";
+  const d = new Date(ts * 1000), n = new Date();
+  const t = d.toLocaleTimeString("de-DE", {hour:"2-digit", minute:"2-digit"});
+  const diff = Math.round((new Date(n.getFullYear(), n.getMonth(), n.getDate()) - new Date(d.getFullYear(), d.getMonth(), d.getDate())) / 864e5);
+  return diff === 0 ? "heute, " + t : diff === 1 ? "gestern, " + t : diff === -1 ? "morgen, " + t
+    : d.toLocaleDateString("de-DE", {day:"2-digit", month:"2-digit", year:"numeric"}) + ", " + t;
+}
+const alertBox = m => m ? `<div class="alert alert-danger">${esc(m)}</div>` : "";
+const n_ = (n, a, b) => `${n} ${n === 1 ? a : b}`;
+
+// Kursbild: Muster aus der Kurs-ID, wie Moodle es für Kurse ohne Bild erzeugt
+const COLORS = ["#e9a3b8", "#f5c96b", "#b7bcc2", "#a9a0e0", "#7fb2e5", "#8fcdb5", "#f0a77e", "#c7d37a", "#d4a5d8", "#9fc4c9"];
+function pattern(id) {
+  let h = 0; for (const ch of String(id)) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  const c = COLORS[h % COLORS.length], kind = (h >> 4) % 3;
+  let shapes = "";
+  if (kind === 0) {           // Kreise
+    for (let i = 0; i < 6; i++) { const x = (i % 3) * 110 + 30, y = Math.floor(i / 3) * 90 + 20;
+      shapes += `<circle cx="${x}" cy="${y}" r="48" fill="none" stroke="#fff" stroke-opacity=".22" stroke-width="14"/>`; }
+  } else if (kind === 1) {    // Dreiecke
+    for (let i = 0; i < 8; i++) { const x = i * 45;
+      shapes += `<path d="M${x} 110 L${x + 45} 0 L${x + 90} 110Z" fill="${i % 2 ? "#fff" : "#000"}" fill-opacity="${i % 2 ? .14 : .06}"/>`; }
+  } else {                    // Quadrate
+    for (let i = 0; i < 10; i++) { const x = (i % 5) * 70 + 8, y = Math.floor(i / 5) * 56 + 4;
+      shapes += `<rect x="${x}" y="${y}" width="48" height="40" fill="none" stroke="#fff" stroke-opacity=".25" stroke-width="8"/>`; }
+  }
+  return `<svg viewBox="0 0 320 110" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><rect width="320" height="110" fill="${c}"/>${shapes}</svg>`;
+}
+
+function siteStatus(s) {
+  if (!s.has_login) return ["Nicht angemeldet", "bad"];
+  if (s.expired) return ["Sitzung abgelaufen", "bad"];
+  if (s.running) return ["Wird synchronisiert …", "warn"];
+  if (s.error && s.offline) return ["Offline, wird nachgeholt", "warn"];
+  if (s.error) return ["Fehler: " + s.error, "bad"];
+  return ["Zuletzt " + when(s.last_ok), "muted"];
+}
+
+// ---------- Tabs
+document.querySelectorAll("[data-tab]").forEach(b => b.onclick = () => {
+  document.querySelectorAll("[data-tab]").forEach(x => x.classList.toggle("on", x === b));
+  document.querySelectorAll("[data-page]").forEach(p => p.hidden = p.dataset.page !== b.dataset.tab);
+  if (b.dataset.tab === "protokoll") loadLog();
+});
+
+// ---------- Rendern
+function render() {
+  const names = Object.keys(S.sites);
+  // Filter
+  const fs = $("#f-site"), keep = fs.value;
+  fs.innerHTML = `<option value="">Alle</option>` + names.map(n => `<option value="${esc(n)}">${esc(S.sites[n].title)}</option>`).join("");
+  fs.value = names.includes(keep) ? keep : "";
+  renderCourses();
+
+  // Block Synchronisation
+  const jobOn = S.job.loaded && S.job.uses_auto;
+  $("#sync-next").innerHTML = jobOn ? `Nächste automatische Synchronisation: <b>${when(S.next_slot)}</b>` : `Automatische Synchronisation ist aus.`;
+  $("#btn-all").disabled = S.sync.running || !names.length;
+  renderSync();
+
+  // Block Moodle-Seiten
+  $("#sites").innerHTML = names.length ? names.map(n => {
+    const s = S.sites[n], [txt, cls] = siteStatus(s), needLogin = !s.has_login || s.expired;
+    return `<div class="site">
+      <div class="n">${esc(s.title)}</div>
+      <div class="s ${cls}">${esc(txt)}</div>
+      <div class="links">
+        ${needLogin ? `<button class="lnk" data-login="${esc(n)}"><b>${s.mode === "cookie" && s.has_login ? "Sitzung erneuern" : "Anmelden"}</b></button>`
+          : `<button class="lnk" data-sync="${esc(n)}" ${S.sync.running ? "disabled" : ""}>Synchronisieren</button>`}
+        ${s.has_login ? `<button class="lnk" data-add="${esc(n)}">Kurse hinzufügen</button>` : ""}
+        ${!needLogin && s.mode === "cookie" ? `<button class="lnk" data-login="${esc(n)}">Sitzung erneuern</button>` : ""}
+        <button class="lnk" data-settings="${esc(n)}">Einstellungen</button>
+      </div></div>`;
+  }).join("") : `<p class="muted" style="margin:0">Noch keine Moodle-Seite eingerichtet.</p>`;
+
+  // Zeitplan
+  $("#job-on").checked = S.job.loaded;
+  $("#job-text").textContent = S.job.loaded ? "Eingeschaltet" : "Ausgeschaltet";
+  $("#times").innerHTML = S.schedule.map(t => `<span class="tchip">${esc(t)} Uhr<button data-deltime="${esc(t)}" aria-label="${esc(t)} entfernen" title="Entfernen">×</button></span>`).join("")
+    + `<input type="time" id="newtime" step="900" aria-label="Weitere Uhrzeit"><button class="btn btn-secondary btn-sm" id="btn-addtime">Hinzufügen</button>`;
+  if (document.activeElement !== $("#target")) $("#target").value = S.target;
+  if (document.activeElement !== $("#skip")) $("#skip").value = (S.skip_ext || []).join(", ");
+}
+
+function allCourses() {
+  const out = [];
+  for (const [n, s] of Object.entries(S.sites)) for (const c of s.courses) out.push({...c, site:n, siteTitle:s.title});
+  return out;
+}
+function courseMenu(c) {
+  return `<details class="menu"><summary aria-label="Aktionen für ${esc(c.part)}">${DOTS}</summary><div class="dd">
+    <button data-open="${esc(c.path)}">${S.platform === "win" ? "Im Explorer öffnen" : "Im Finder öffnen"}</button>
+    <button data-edit="${esc(c.site)}|${esc(c.id)}">Ordner festlegen …</button>
+    <button class="del" data-remove="${esc(c.site)}|${esc(c.id)}">Nicht mehr synchronisieren</button>
+  </div></details>`;
+}
+function courseInfo(c) {
+  if (c.time == null) return c.exists ? "noch nicht synchronisiert" : "Ordner wird beim ersten Mal angelegt";
+  const files = n_((c.skipped || 0) + (c.new || 0), "Datei", "Dateien");
+  return c.errors ? `<span class="bad">${files}, ${c.errors} Fehler</span>` : c.new ? `${files}, <span class="good">${c.new} neu</span>` : files;
+}
+// Kurse, die in denselben Kursordner laden (z. B. Vorlesung in „Moodle“, AG in „Moodle AG“), bilden eine Kachel
+function groups(cs) {
+  const m = new Map();
+  for (const c of cs) {   // Gruppe und Teil kommen vom Server (Pfadtrenner je nach System)
+    const key = c.group;
+    if (c.moodle_title && c.part !== "Vorlesung") c.part = c.moodle_title;
+    if (!m.has(key)) m.set(key, {key, name:c.group_name, site:c.site, siteTitle:c.siteTitle, items:[]});
+    m.get(key).items.push(c);
+  }
+  for (const g of m.values()) g.items.sort((a, b) => (a.part === "Vorlesung" ? -1 : b.part === "Vorlesung" ? 1 : a.part.localeCompare(b.part, "de")));
+  return [...m.values()];
+}
+const gtime = g => Math.max(...g.items.map(c => c.time || 0));
+function srcRow(c, single) {
+  return `<div class="src">
+    <div class="sx">${single ? "" : `<div class="sn">${esc(c.part)}</div>`}
+      <button class="lnk sp" data-edit="${esc(c.site)}|${esc(c.id)}" title="${esc(c.path)} – Ordner festlegen">${esc("…" + S.sep + c.leaf)}</button>
+      <div class="si">${courseInfo(c)}</div></div>
+    ${courseMenu(c)}</div>`;
+}
+function renderCourses() {
+  const site = $("#f-site").value, q = $("#f-q").value.trim().toLowerCase(), sort = $("#f-sort").value, view = $("#f-view").value;
+  const cs = allCourses().filter(c => (!site || c.site === site) && (!q || (c.label + " " + c.path + " " + (c.moodle_title || "")).toLowerCase().includes(q)));
+  const gs = groups(cs);
+  gs.sort(sort === "time" ? (a, b) => gtime(b) - gtime(a) : (a, b) => a.name.localeCompare(b.name, "de"));
+  const box = $("#courses");
+  if (!gs.length) {
+    box.innerHTML = `<div class="empty">${Object.keys(S.sites).length ? (q || site ? "Keine Kurse gefunden." : "Noch keine Kurse. Rechts unter „Moodle-Seiten“ → „Kurse hinzufügen“.") : "Rechts unter „Moodle-Seiten“ eine Moodle-Seite hinzufügen."}</div>`;
+    return;
+  }
+  const head = g => `<button class="lnk title" data-open="${esc(g.key)}" title="${esc(g.key)}">${esc(g.name)}</button><div class="cat">${esc(g.siteTitle)}</div>`;
+  const body = g => g.items.map(c => srcRow(c, g.items.length === 1)).join("");
+  box.innerHTML = view === "list"
+    ? `<div class="list">${gs.map(g => `<div class="row-c"><div class="thumb">${pattern(g.key)}</div><div>${head(g)}${body(g)}</div></div>`).join("")}</div>`
+    : `<div class="grid">${gs.map(g => `<div class="ccard">
+        <button class="lnk img" data-open="${esc(g.key)}" tabindex="-1" aria-hidden="true">${pattern(g.key)}</button>
+        <div class="body">${head(g)}</div>${body(g)}</div>`).join("")}</div>`;
+}
+["#f-site", "#f-sort", "#f-view"].forEach(id => $(id).onchange = () => {
+  try { localStorage.setItem("ms-view", JSON.stringify({sort:$("#f-sort").value, view:$("#f-view").value})); } catch {}
+  renderCourses();
+});
+$("#f-q").oninput = renderCourses;
+if (pref.sort) $("#f-sort").value = pref.sort;
+if (pref.view) $("#f-view").value = pref.view;
+
+function renderSync() {
+  const r = S.sync, box = $("#sync-run");
+  if (!r.running && r.exit == null) { box.hidden = true; return; }
+  box.hidden = false;
+  const who = r.site ? (S.sites[r.site]?.title || r.site) : "Alle Moodle-Seiten";
+  $("#sync-title").innerHTML = r.running ? `${esc(who)} wird synchronisiert …`
+    : `${esc(who)}: <span class="${r.exit === 0 ? "good" : "bad"}">${r.exit === 0 ? "fertig, ohne Fehler" : "fertig, mit Fehlern"}</span>`;
+  const out = $("#sync-out"), atEnd = out.scrollTop + out.clientHeight >= out.scrollHeight - 20;
+  out.textContent = r.lines.join("\n") || "Startet …";
+  if (atEnd) out.scrollTop = out.scrollHeight;
+}
+
+async function refresh() {
+  try { S = await api("/api/state"); render(); }
+  catch (e) { $("#courses").innerHTML = alertBox("Keine Verbindung zur Oberfläche. Sie beendet sich, wenn die Seite länger zu war. Moodle-Sync bitte neu starten."); }
+  clearTimeout(timer);
+  timer = setTimeout(refresh, S && (S.sync.running || Object.values(S.sites).some(s => s.running)) ? 1000 : 15000);
+}
+async function act(fn, errEl) {
+  try { await fn(); if (errEl) errEl.innerHTML = ""; return true; }
+  catch (e) { if (errEl) errEl.innerHTML = alertBox(e.message); else alert(e.message); return false; }
+  finally { refresh(); }
+}
+async function loadLog() { const r = await api("/api/log"); $("#log").textContent = r.log || "(leer)"; $("#log").scrollTop = 1e9; }
+const course = (n, id) => S.sites[n].courses.find(c => String(c.id) === String(id));
+
+// ---------- Klicks
+document.addEventListener("click", async e => {
+  document.querySelectorAll("details.menu[open]").forEach(d => { if (!d.contains(e.target)) d.open = false; });
+  const b = e.target.closest("button"); if (!b) return;
+  const d = b.dataset;
+  b.closest("details.menu")?.removeAttribute("open");
+  if (d.close !== undefined) return b.closest("dialog").close();
+  if (d.sync) return act(() => api("/api/sync", {name:d.sync}));
+  if (d.open) return act(() => api("/api/open", {path:d.open}));
+  if (d.login) return openLogin(d.login);
+  if (d.add) return openCourses(d.add);
+  if (d.settings) return openSite(d.settings);
+  if (d.edit) { const [n, id] = d.edit.split("|"); return openFolder(n, id); }
+  if (d.remove) {
+    const [n, id] = d.remove.split("|"), c = course(n, id);
+    if (confirm(`„${c.label}“ nicht mehr synchronisieren?\n\nDie Dateien im Ordner bleiben erhalten.`)) act(() => api("/api/course/remove", {name:n, id}));
+    return;
+  }
+  if (d.deltime) return act(() => api("/api/settings", {schedule:S.schedule.filter(t => t !== d.deltime)}));
+  if (d.pick !== undefined) {
+    const inp = $("#cp-" + d.pick), r = await api("/api/pick", {start:inp.value.replace(/[\\/]Moodle$/, "")});
+    if (r.path) inp.value = withSub(r.path);
+    return;
+  }
+  if (b.id === "btn-addtime") { const v = $("#newtime").value; if (v) act(() => api("/api/settings", {schedule:[...S.schedule, v]})); }
+});
+
+$("#btn-all").onclick = () => act(() => api("/api/sync", {}));
+$("#job-on").onchange = e => act(() => api("/api/job", {on:e.target.checked}));
+$("#btn-target").onclick = async () => { const r = await api("/api/pick", {start:$("#target").value}); if (r.path) $("#target").value = r.path; };
+$("#btn-save-settings").onclick = async () => {
+  if (await act(() => api("/api/settings", {target:$("#target").value, skip_ext:$("#skip").value.split(",")}))) {
+    $("#settings-ok").textContent = "Gespeichert"; setTimeout(() => $("#settings-ok").textContent = "", 2500);
+  }
+};
+$("#btn-log").onclick = loadLog;
+
+// ---------- Anmelden
+function openLogin(n) {
+  cur.login = n; const s = S.sites[n];
+  $("#login-title").textContent = (s.mode === "token" ? "Anmelden bei " : "Sitzung übernehmen: ") + s.title;
+  $("#login-token").hidden = s.mode !== "token"; $("#login-cookie").hidden = s.mode === "token";
+  ["#lg-user", "#lg-pass", "#lg-cookie"].forEach(i => $(i).value = ""); $("#login-err").innerHTML = "";
+  $("#lg-devtools").textContent = S.platform === "mac"
+    ? "Entwicklertools öffnen (Cmd + Alt + I) → Application → Cookies, in Safari: Speicher → Cookies."
+    : "Entwicklertools öffnen (F12) → Anwendung bzw. Application → Cookies, in Firefox: Web-Speicher → Cookies.";
+  $("#dlg-login").showModal(); (s.mode === "token" ? $("#lg-user") : $("#lg-cookie")).focus();
+}
+$("#lg-open").onclick = () => api("/api/open-site", {name:cur.login});
+$("#lg-ok").onclick = async () => {
+  const n = cur.login, s = S.sites[n], b = $("#lg-ok");
+  b.disabled = true; $("#login-err").innerHTML = `<p class="help">Wird geprüft …</p>`;
+  const body = s.mode === "token" ? {name:n, username:$("#lg-user").value, password:$("#lg-pass").value} : {name:n, cookie:$("#lg-cookie").value};
+  const ok = await act(() => api("/api/login", body), $("#login-err"));
+  b.disabled = false; $("#lg-pass").value = ""; $("#lg-cookie").value = "";
+  if (ok) { $("#dlg-login").close(); S = await api("/api/state"); render(); if (!S.sites[n].courses.length) openCourses(n); }
+};
+["#lg-pass", "#lg-cookie", "#lg-user"].forEach(i => $(i).addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); $("#lg-ok").click(); } }));
+
+// ---------- Kurse hinzufügen
+const withSub = p => { p = p.trim().replace(/[\\/]+$/, "").replace(/[\\/]Moodle$/, ""); return $("#cs-sub").checked ? p + S.sep + "Moodle" : p; };
+function subFix() { (cur.rows || []).forEach((_, i) => { const f = $("#cp-" + i); if (f) f.value = withSub(f.value); }); }
+$("#cs-sub").onchange = subFix;
+async function openCourses(n) {
+  cur.courses = n; cur.rows = [];
+  $("#courses-title").textContent = "Kurse hinzufügen – " + S.sites[n].title;
+  $("#courses-body").innerHTML = `<p class="help">Kursliste wird geladen …</p>`; $("#courses-err").innerHTML = ""; $("#courses-count").textContent = "";
+  $("#cs-ok").disabled = true; $("#dlg-courses").showModal();
+  try {
+    const all = (await api("/api/courses?name=" + encodeURIComponent(n))).courses;
+    cur.rows = all.filter(c => !c.selected);
+    if (!cur.rows.length) { $("#courses-body").innerHTML = `<p>Alle ${all.length} Kurse werden schon synchronisiert.</p>`; return; }
+    $("#courses-body").innerHTML = cur.rows.map((c, i) => `
+      <div class="pick off" id="pk-${i}">
+        <input type="checkbox" id="cc-${i}">
+        <label for="cc-${i}">${esc(c.title)}</label>
+        <div class="pr"><input type="text" class="path" id="cp-${i}" value="${esc(c.suggest)}" aria-label="Ordner für ${esc(c.title)}"><button class="btn btn-secondary btn-sm" data-pick="${i}">Durchsuchen …</button></div>
+      </div>`).join("");
+    const upd = () => {
+      cur.rows.forEach((_, i) => $("#pk-" + i).classList.toggle("off", !$("#cc-" + i).checked));
+      const k = cur.rows.filter((_, i) => $("#cc-" + i).checked).length;
+      $("#courses-count").textContent = k ? n_(k, "Kurs", "Kurse") + " ausgewählt" : "";
+      $("#cs-ok").disabled = !k;
+    };
+    cur.rows.forEach((_, i) => $("#cc-" + i).onchange = upd); upd(); subFix();
+  } catch (e) {
+    $("#courses-body").innerHTML = alertBox(e.expired ? "Die Sitzung ist abgelaufen. Bitte zuerst „Sitzung erneuern“." : e.message);
+  }
+}
+$("#cs-ok").onclick = async () => {
+  const courses = cur.rows.map((c, i) => ({c, i})).filter(x => $("#cc-" + x.i).checked)
+    .map(({c, i}) => ({id:c.id, title:c.title, path:$("#cp-" + i).value.trim().replace(/\/+$/, "")}));
+  if (await act(() => api("/api/course/add", {name:cur.courses, courses}), $("#courses-err"))) $("#dlg-courses").close();
+};
+
+// ---------- Ordner ändern
+function openFolder(n, id) {
+  cur.folder = [n, id]; const c = course(n, id);
+  $("#folder-title").textContent = "Ordner für " + (c.moodle_title || c.label);
+  $("#fd-path").value = c.raw_is_path ? c.raw : c.path;
+  $("#folder-err").innerHTML = ""; $("#dlg-folder").showModal();
+}
+$("#fd-pick").onclick = async () => { const r = await api("/api/pick", {start:$("#fd-path").value}); if (r.path) $("#fd-path").value = r.path; };
+$("#fd-ok").onclick = async () => {
+  const [n, id] = cur.folder;
+  if (await act(() => api("/api/course/update", {name:n, courses:[{id, path:$("#fd-path").value}]}), $("#folder-err"))) $("#dlg-folder").close();
+};
+
+// ---------- Einstellungen einer Moodle-Seite
+function openSite(n) {
+  cur.site = n; const s = S.sites[n];
+  $("#site-title").textContent = "Einstellungen – " + s.title;
+  $("#st-title").value = s.title; $("#st-auto").checked = s.auto;
+  $("#st-auto-hint").textContent = s.mode === "cookie" ? "Die Browser-Sitzung läuft irgendwann ab. Dann gibt es eine Mitteilung, und du erneuerst sie hier." : "";
+  $("#st-sciebo").value = s.sciebo_max_mb; $("#st-notes").value = (s.notes_hosts || []).join(", ");
+  $("#site-err").innerHTML = ""; $("#dlg-site").showModal();
+}
+$("#st-ok").onclick = async () => {
+  const body = {name:cur.site, title:$("#st-title").value, auto:$("#st-auto").checked,
+    sciebo_max_mb:Number($("#st-sciebo").value || 0), notes_hosts:$("#st-notes").value.split(",")};
+  if (await act(() => api("/api/site/settings", body), $("#site-err"))) $("#dlg-site").close();
+};
+$("#st-remove").onclick = async () => {
+  const s = S.sites[cur.site];
+  if (!confirm(`${s.title} entfernen?\n\nDie Kursauswahl wird gelöscht, deine Dateien bleiben erhalten.`)) return;
+  if (await act(() => api("/api/site/remove", {name:cur.site}), $("#site-err"))) $("#dlg-site").close();
+};
+
+// ---------- Moodle hinzufügen
+$("#btn-add-uni").onclick = () => {
+  cur.probe = null; $("#add-1").hidden = false; $("#add-2").hidden = true;
+  $("#add-url").value = ""; $("#add-err").innerHTML = ""; $("#add-next").textContent = "Weiter";
+  $("#dlg-add").showModal(); $("#add-url").focus();
+};
+$("#add-url").addEventListener("keydown", e => { if (e.key === "Enter") { e.preventDefault(); $("#add-next").click(); } });
+$("#add-next").onclick = async () => {
+  const b = $("#add-next"); b.disabled = true;
+  try {
+    if (!cur.probe) {
+      $("#add-err").innerHTML = `<p class="help">Adresse wird geprüft …</p>`;
+      const p = cur.probe = await api("/api/probe", {url:$("#add-url").value});
+      $("#add-err").innerHTML = ""; $("#add-1").hidden = true; $("#add-2").hidden = false;
+      $("#add-2").innerHTML = `<div class="alert alert-success"><b>${esc(p.sitename)}</b> gefunden. ${p.mode === "token"
+          ? "Anmeldung mit Anmeldename und Kennwort."
+          : "Anmeldung nur über den Browser möglich, die Sitzung muss ab und zu erneuert werden."}</div>
+        <label class="f" for="add-title">Name</label><input type="text" id="add-title" placeholder="z. B. TU Dortmund" style="width:100%">
+        <label class="f" for="add-name">Kurzname</label>
+        <input type="text" id="add-name" value="${esc(p.suggest)}" style="width:180px">
+        <p class="help">Für das Terminal: <code>moodle-sync <span id="add-cmd">${esc(p.suggest)}</span></code></p>`;
+      $("#add-name").oninput = e => $("#add-cmd").textContent = e.target.value;
+      b.textContent = "Hinzufügen"; $("#add-title").focus();
+    } else {
+      const r = await api("/api/site/save", {name:$("#add-name").value, url:cur.probe.url, title:$("#add-title").value});
+      $("#dlg-add").close(); S = await api("/api/state"); render(); openLogin(r.name);
+    }
+  } catch (e) { $("#add-err").innerHTML = alertBox(e.message); }
+  finally { b.disabled = false; }
+};
+
+refresh();
+</script>
+</body>
+</html>

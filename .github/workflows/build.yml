@@ -1,0 +1,113 @@
+# Testet auf echtem macOS und Windows, baut die Apps und legt sie bei einem Versions-Tag (v1.2.0) als Release ab.
+name: Build
+
+on:
+  push:
+    branches: [main]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  datenschutz:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Keine persönlichen Daten im Repository
+        run: python3 tools/check_private.py
+
+  test:
+    needs: datenschutz
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-14, windows-latest]
+        python: ["3.9", "3.12"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - name: Plattform-Tests
+        run: python -I -X utf8 tests/test_platform.py
+
+  build-mac:
+    needs: test
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-app.txt
+      - name: App bauen
+        run: pyinstaller --noconfirm --distpath build/dist --workpath build/work moodle-sync.spec
+      - name: App startet als Befehl
+        run: build/dist/Moodle-Sync.app/Contents/MacOS/Moodle-Sync hilfe
+      - name: DMG
+        run: sh packaging/mac/make_dmg.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mac
+          path: build/installer/*.dmg
+
+  build-windows:
+    needs: test
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements-app.txt
+      - name: App bauen
+        run: pyinstaller --noconfirm --distpath build/dist --workpath build/work moodle-sync.spec
+      - name: App startet als Befehl (schreibt ins Log, da ohne Konsole)
+        shell: pwsh
+        run: |
+          $env:MOODLE_SYNC_HOME = "$env:RUNNER_TEMP\ms"
+          $p = Start-Process build\dist\Moodle-Sync\Moodle-Sync.exe -ArgumentList "job","status" -Wait -PassThru
+          if ($p.ExitCode -ne 0) { exit 1 }
+          Get-Content "$env:RUNNER_TEMP\ms\moodle-sync.log"
+      - name: Installer
+        shell: pwsh
+        run: |
+          $iscc = "${env:ProgramFiles(x86)}\Inno Setup 6\ISCC.exe"
+          if (-not (Test-Path $iscc)) { choco install innosetup -y --no-progress; }
+          $env:MS_VERSION = python -c "import re;print(re.search(r'__version__ = \"([^\"]+)\"', open('moodle_sync.py', encoding='utf-8').read()).group(1))"
+          & $iscc packaging\windows\installer.iss
+          if ($LASTEXITCODE -ne 0) { exit 1 }
+      - name: Installer still installieren und wieder entfernen
+        shell: pwsh
+        run: |
+          $setup = Get-ChildItem build\installer\*.exe | Select-Object -First 1
+          Start-Process $setup.FullName -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES","/NORESTART" -Wait
+          $exe = "$env:LOCALAPPDATA\Programs\Moodle-Sync\Moodle-Sync.exe"
+          if (-not (Test-Path $exe)) { Write-Error "nicht installiert"; exit 1 }
+          Start-Process "$env:LOCALAPPDATA\Programs\Moodle-Sync\unins000.exe" -ArgumentList "/VERYSILENT","/SUPPRESSMSGBOXES" -Wait
+          Start-Sleep 3
+          if (Test-Path $exe) { Write-Error "nicht entfernt"; exit 1 }
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: build/installer/*.exe
+
+  release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [build-mac, build-windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true

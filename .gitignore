@@ -1,0 +1,95 @@
+# ============================================================
+# Moodle-Sync – was NIE ins Repository darf
+# Erst ausschließen, dann prüft tools/check_private.py jeden Commit zusätzlich.
+# ============================================================
+
+# --- Persönliche Einstellungen und Stand (liegen normal in Application Support / %APPDATA%)
+config.toml
+**/config.toml
+!config.example.toml
+config.toml.*
+state.json
+state.*
+.hashcache.json
+ui.json
+task.xml
+.lock
+*.lock
+webview/
+
+# --- Zugangsdaten, Schlüssel, Cookies (gehören nur in Schlüsselbund / Anmeldeinformationsverwaltung)
+.secrets.json
+*secret*
+*.secret
+*token*
+*cookie*
+*.pem
+*.key
+*.p12
+*.pfx
+*.cer
+*.crt
+*.keychain
+*.keychain-db
+.env
+.env.*
+.netrc
+credentials*
+id_rsa*
+id_ed25519*
+
+# --- Protokolle und Sicherungskopien (enthalten Kurs- und Ordnernamen)
+*.log
+logs/
+*.bak
+*.tmp
+*.orig
+*.vor-umzug
+*.vorher*
+*.backup
+
+# --- Erzeugte Dateien mit Pfaden dieses Rechners
+*.plist
+!packaging/**/*.plist
+de.local.moodle-sync.plist
+
+# --- Heruntergeladene Kursdateien (falls aus Versehen hier gelandet)
+Moodle/
+Moodle */
+*.pdf
+*.pptx
+*.docx
+*.zip
+*.ova
+
+# --- Build und Python
+.venv/
+venv/
+build/
+dist/
+__pycache__/
+*.py[cod]
+*.spec.bak
+assets/icon.iconset/
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# --- Editor, System, KI-Werkzeuge (können Pfade, Namen, Verläufe enthalten)
+.DS_Store
+._*
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/
+*.swp
+*~
+.claude/
+CLAUDE.md
+AGENTS.md
+.cursor/
+.codex/
+*.local.*
+tools/private-words.txt
+private-words.txt

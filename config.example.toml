@@ -1,0 +1,25 @@
+# Beispiel für Moodle-Sync. Einfacher geht es über die Oberfläche (moodle-sync ui):
+# Dort Moodle hinzufügen, anmelden, Kurse anhaken und Ordner wählen.
+# Die echte Datei liegt in ~/Library/Application Support/moodle-sync/config.toml
+# (Windows: %APPDATA%\moodle-sync\config.toml).
+
+target = "~/Moodle"   # Vorschlag für neue Kurse: <target>/<kurz>/<Kursname>
+
+# Diese Dateitypen werden nie geladen (Videos/Aufzeichnungen)
+skip_ext = ["mp4", "mkv", "mov", "avi", "webm", "m4v", "wmv"]
+
+# Zu diesen Uhrzeiten wird geladen; verpasste Termine holt der Job nach (moodle-sync job an)
+schedule = ["08:00", "18:00"]
+
+[sites.uni]
+title = "Meine Uni"
+url  = "https://moodle.uni-beispiel.de"
+mode = "token"            # Mobile-API an -> Anmeldename/Kennwort, läuft automatisch
+# mode = "cookie"         # Mobile-API aus -> Browser-Sitzung, von Hand erneuern
+# auto = false            # nicht im Hintergrund laden
+sciebo_max_mb = 300       # größere Sciebo-Dateien überspringen
+notes_hosts = []          # z. B. ["codi.example.de"]: CodiMD/HedgeDoc-Notizen als .md laden
+
+[sites.uni.courses]
+# Kurs-ID = Zielordner (ID steht in der Kurs-Adresse: course/view.php?id=12345)
+# "12345" = "~/Studium/Mathe 1/Moodle"
